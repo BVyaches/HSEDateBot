@@ -34,11 +34,20 @@ async def get_next_person(user_id):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
 
-    # Get every id of active users
-    cursor.execute('SELECT user_id FROM users WHERE is_active == 1 AND user_id != (?)', (user_id,))
+    # Get the gender user wants to find
+    cursor.execute('SELECT want_to_find FROM users WHERE user_id = (?)', (user_id,))
+    gender_user_wants = cursor.fetchone()[0]
+
+    # Get every id of active users that satisfies preferences
+    cursor.execute('SELECT user_id FROM users WHERE is_active == 1 AND user_id != (?) AND gender = (?)',
+                   (user_id, gender_user_wants))
     all_users = set([x[0] for x in cursor.fetchall()])
+
+    # Return False if no users are available
     if not all_users:
         return False
+
+    # Get viewed users
     cursor.execute('SELECT viewed_users FROM users WHERE user_id == (?)', (user_id,))
     result = cursor.fetchall()
     # If no one is viewed
@@ -73,6 +82,7 @@ async def get_next_person(user_id):
 async def test(user_id):
     print(await get_next_person(user_id))
 
+
 # check
 
-asyncio.run(test(11111))
+asyncio.run(test(4444))
