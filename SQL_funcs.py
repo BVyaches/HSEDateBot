@@ -73,5 +73,6 @@ async def get_next_person(user_id):
 async def test(user_id):
     print(await get_next_person(user_id))
 
+# check
 
 asyncio.run(test(11111))
