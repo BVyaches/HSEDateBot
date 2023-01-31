@@ -3,6 +3,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
+from initialization import bot
 from SQL_funcs import *
 from keyboards import *
 
@@ -15,7 +16,7 @@ from keyboards import *
                'photo TEXT,'
                'about TEXT,'
                'email TEXT,'
-               """
+"""
 
 
 class RegisterUser(StatesGroup):
@@ -58,6 +59,8 @@ async def register_user_gender(message: types.Message, state: FSMContext):
 
 async def register_user_want_to_find(message: types.Message, state: FSMContext):
     print(await state.get_data())
+    await bot.send_message(message.from_user.id, await state.get_data())
+
 
 def register_handler_find_pair(dp: Dispatcher):
     dp.register_message_handler(register_user_start, Text(equals='Регистрация'), state='*')
