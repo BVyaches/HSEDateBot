@@ -1,7 +1,7 @@
 import random
 import smtplib
 import re
-
+import asyncio
 
 async def SendVerificationCode(toAddrs):
     email = 'hseloveperm.bot@yandex.ru'
@@ -26,4 +26,7 @@ async def SendVerificationCode(toAddrs):
 
 async def check_hse_mail(email):
     pattern = r'\w+@(edu\.)?hse\.ru'
+    print(re.fullmatch(pattern, email) is None)
     return re.fullmatch(pattern, email)
+
+asyncio.run(check_hse_mail('vsbolshagin@edu.hse..ru'))

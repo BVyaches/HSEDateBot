@@ -1,9 +1,12 @@
-from aiogram import Dispatcher, types
+import types
+
+from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from initialization import bot
+
 from SQL_funcs import *
+from initialization import bot
 from keyboards import *
 from verification import check_hse_mail, SendVerificationCode
 
@@ -28,10 +31,16 @@ class RegisterUser(StatesGroup):
     waiting_photo = State()
     waiting_about = State()
     waiting_email = State()
+    waiting_code = State()
+
+
+class VerUser(StatesGroup):
+    is_verified = State()
 
 
 async def register_user_start(message: types.Message):
-    await message.answer('Как к вам обращаться?', reply_markup=types.ReplyKeyboardRemove())
+    await message.answer('Как к вам обращаться?',
+                         reply_markup=types.ReplyKeyboardRemove())
     await RegisterUser.waiting_name.set()
 
 
@@ -44,8 +53,9 @@ async def register_user_name(message: types.Message, state: FSMContext):
 async def register_user_gender(message: types.Message, state: FSMContext):
     gender = message.text
     if gender not in ['Парень', 'Девушка']:
-        await message.answer('Пожалуйста, выбери пол из предложенных на клавиатуре',
-                             reply_markup=await gender_keyboard())
+        await message.answer(
+            'Пожалуйста, выбери пол из предложенных на клавиатуре',
+            reply_markup=await gender_keyboard())
         return True
 
     if gender == 'Парень':
@@ -59,7 +69,8 @@ async def register_user_gender(message: types.Message, state: FSMContext):
     else:
         await state.update_data(waiting_want_to_find='f')
 
-    await message.answer('Сколько тебе лет?', reply_markup=types.ReplyKeyboardRemove())
+    await message.answer('Сколько тебе лет?',
+                         reply_markup=types.ReplyKeyboardRemove())
     await RegisterUser.waiting_age.set()
 
 
@@ -96,23 +107,59 @@ async def register_user_photo(message: types.Message, state: FSMContext):
 async def register_user_about(message: types.Message, state: FSMContext):
     about = message.text
     await state.update_data(waiting_about=about)
-    await message.answer('Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент вышки')
+    await message.answer(
+        'Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент вышки')
     await RegisterUser.waiting_email.set()
+
 
 async def register_user_email(message: types.Message, state: FSMContext):
     email = message.text
-    if not check_hse_mail(email):
-        await message.answer('Пожалуйста, введи твою личную почту с доменом @hse')
+    if await check_hse_mail(email) is None:
+        await message.answer(
+            'Пожалуйста, введи твою личную почту с доменом @hse')
         return True
 
     code = await SendVerificationCode(email)
+    await state.update_data(waiting_code=code)
+    await message.answer(
+        'На указанную почту отправлен код верификации. Отправь его.\n'
+        'Проверьте папку спам', reply_markup=await email_keyboard())
+    await RegisterUser.waiting_code.set()
 
+
+async def register_user_code(message: types.Message, state: FSMContext):
+    entered_code = message.text
+    verification = await state.get_data()
+    verification_code = verification['waiting_code']
+    if entered_code != verification_code:
+        await message.answer(
+            'Похоже, введен не тот код. Попробуй еще раз или введи другую почту')
+        return True
+    await message.answer('Регистрация успешна!')
+    await add_user(*await state.get_data())
+    await VerUser.is_verified.set()
 
 
 def register_handler_find_pair(dp: Dispatcher):
-    dp.register_message_handler(register_user_start, Text(equals='Регистрация'), state='*')
-    dp.register_message_handler(register_user_name, state=RegisterUser.waiting_name)
-    dp.register_message_handler(register_user_gender, state=RegisterUser.waiting_gender)
-    dp.register_message_handler(register_user_age, state=RegisterUser.waiting_age)
-    dp.register_message_handler(register_user_faculty, state=RegisterUser.waiting_faculty)
-    dp.register_message_handler(register_user_photo, state=RegisterUser.waiting_photo, content_types=['photo'])
+    dp.register_message_handler(register_user_start, Text(equals='Регистрация'),
+                                state='*')
+    dp.register_message_handler(register_user_name,
+                                state=RegisterUser.waiting_name)
+    dp.register_message_handler(register_user_gender,
+                                state=RegisterUser.waiting_gender)
+    dp.register_message_handler(register_user_age,
+                                state=RegisterUser.waiting_age)
+    dp.register_message_handler(register_user_faculty,
+                                state=RegisterUser.waiting_faculty)
+    dp.register_message_handler(register_user_photo,
+                                state=RegisterUser.waiting_photo,
+                                content_types=['photo'])
+    dp.register_message_handler(register_user_about,
+                                state=RegisterUser.waiting_about)
+    dp.register_message_handler(register_user_email,
+                                state=RegisterUser.waiting_email)
+    dp.register_message_handler(register_user_email,
+                                Text(equals='Ввести другой email'),
+                                state=RegisterUser.waiting_code)
+    dp.register_message_handler(register_user_code,
+                                state=RegisterUser.waiting_code)
