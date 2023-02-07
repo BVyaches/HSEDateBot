@@ -8,8 +8,8 @@ async def SendVerificationCode(toAddrs):
     verCode = str(random.randint(0, 9)) + str(random.randint(0, 9)) + str(random.randint(0, 9)) + str(
         random.randint(0, 9))
 
-    subject = 'Верификация'
-    message = 'placeholder ' + verCode + ' placeholder'
+    subject = '❕Ваш код для входа и создания анкеты❕'
+    message = 'Ваш код для входа и регистрации: ' + verCode
 
     msg = 'From: {}\r\nTo: {}\r\nSubject: {}\n\n{}'.format(
         email, toAddrs, subject, message
