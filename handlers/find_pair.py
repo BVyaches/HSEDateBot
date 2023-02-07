@@ -10,6 +10,10 @@ from initialization import bot
 from keyboards import *
 from verification import check_hse_mail, SendVerificationCode
 
+# Тут по тз порядок другой, пол, возраст, факультет, имя, фото, о себе
+# Так что я (Виталий) тебе поменял порядок в функции def register_handler_find_pair
+# Надеюсь у тебя ничего не сломается :)
+
 """
                 name TEXT,'
                'gender TEXT,'
@@ -39,9 +43,9 @@ class VerUser(StatesGroup):
 
 
 async def register_user_start(message: types.Message):
-    await message.answer('Как к вам обращаться?',
+    await message.answer('📌Напиши своё имя, как к тебе обращаться?📌',
                          reply_markup=types.ReplyKeyboardRemove())
-    await RegisterUser.waiting_name.set()
+    await RegisterUser.waiting_name.set() # Поменяй порядок!
 
 
 async def register_user_name(message: types.Message, state: FSMContext):
@@ -52,9 +56,9 @@ async def register_user_name(message: types.Message, state: FSMContext):
 
 async def register_user_gender(message: types.Message, state: FSMContext):
     gender = message.text
-    if gender not in ['Парень', 'Девушка']:
+    if gender not in ['Парень', 'Девушка']: # Для кнопок: 🧑🏻‍Парень, 👩🏻‍🦱Девушка
         await message.answer(
-            'Пожалуйста, выбери пол из предложенных на клавиатуре',
+            '❗️Пожалуйста, выбери пол из предложенных на клавиатуре❗️',
             reply_markup=await gender_keyboard())
         return True
 
@@ -83,7 +87,7 @@ async def register_user_age(message: types.Message, state: FSMContext):
 
     await state.update_data(waiting_age=int(age))
 
-    await message.answer('Укажи ваш факультет')
+    await message.answer('🎓Твой факультет?🎓')
 
     await bot.send_message(message.from_user.id, await state.get_data())
     await RegisterUser.waiting_faculty.set()
@@ -92,7 +96,7 @@ async def register_user_age(message: types.Message, state: FSMContext):
 async def register_user_faculty(message: types.Message, state: FSMContext):
     faculty = message.text
     await state.update_data(waiting_faculty=faculty)
-    await message.answer('Отправь 1 фото для анкеты')
+    await message.answer('📸Оставь фоточку для анкеты📸')
     await RegisterUser.waiting_photo.set()
 
 
@@ -101,14 +105,14 @@ async def register_user_photo(message: types.Message, state: FSMContext):
     await RegisterUser.waiting_about.set()
 
     await state.update_data(waiting_photo=photo)
-    await message.answer('Расскажи о себе')
+    await message.answer('✏️Расскажи о себе (Один-два приложения)✏️')
 
 
 async def register_user_about(message: types.Message, state: FSMContext):
     about = message.text
     await state.update_data(waiting_about=about)
     await message.answer(
-        'Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент вышки')
+        'Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент ВШЭ')
     await RegisterUser.waiting_email.set()
 
 
@@ -116,14 +120,14 @@ async def register_user_email(message: types.Message, state: FSMContext):
     email = message.text
     if await check_hse_mail(email) is None:
         await message.answer(
-            'Пожалуйста, введи твою личную почту с доменом @hse')
+            'Пожалуйста, введи свою учебную почту с доменом @hse')
         return True
 
     code = await SendVerificationCode(email)
     await state.update_data(waiting_code=code)
     await message.answer(
-        'На указанную почту отправлен код верификации. Отправь его.\n'
-        'Проверьте папку спам', reply_markup=await email_keyboard())
+        'На указанную почту отправлен код верификации. Напиши код в бот скорее😉.\n'
+        'Либо проверьте папку спам 🗑', reply_markup=await email_keyboard())
     await RegisterUser.waiting_code.set()
 
 
@@ -135,7 +139,7 @@ async def register_user_code(message: types.Message, state: FSMContext):
         await message.answer(
             'Похоже, введен не тот код. Попробуй еще раз или введи другую почту')
         return True
-    await message.answer('Регистрация успешна!')
+    await message.answer('Регистрация успешна! Ну а теперь начинаем😎')
     await add_user(*await state.get_data())
     await VerUser.is_verified.set()
 
@@ -143,14 +147,14 @@ async def register_user_code(message: types.Message, state: FSMContext):
 def register_handler_find_pair(dp: Dispatcher):
     dp.register_message_handler(register_user_start, Text(equals='Регистрация'),
                                 state='*')
-    dp.register_message_handler(register_user_name,
-                                state=RegisterUser.waiting_name)
     dp.register_message_handler(register_user_gender,
                                 state=RegisterUser.waiting_gender)
     dp.register_message_handler(register_user_age,
                                 state=RegisterUser.waiting_age)
     dp.register_message_handler(register_user_faculty,
                                 state=RegisterUser.waiting_faculty)
+    dp.register_message_handler(register_user_name,                     # Да, имя теперь четвёртое
+                                state=RegisterUser.waiting_name)
     dp.register_message_handler(register_user_photo,
                                 state=RegisterUser.waiting_photo,
                                 content_types=['photo'])
