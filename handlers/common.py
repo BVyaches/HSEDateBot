@@ -5,8 +5,8 @@ from keyboards import *
 
 
 async def start_bot(message: types.Message):
-    await message.answer('Это бот для знакомств вышки. Пока тестовый')
-    await message.answer('Познакомимся?', reply_markup=await start_keyboard())
+    await message.answer('Любовь-это совершать глупости вместе🌝\nПоздравляем! Ты попал, куда нужно😏\nHSE_Love_Perm - это бот для поиска твоей судьбы в НИУ ВШЭ-Пермь❤️')
+    await message.answer('Начнём?😏', reply_markup=await start_keyboard())
 
 
 
