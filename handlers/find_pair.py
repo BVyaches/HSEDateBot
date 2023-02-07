@@ -145,7 +145,7 @@ async def register_user_code(message: types.Message, state: FSMContext):
 
 
 def register_handler_find_pair(dp: Dispatcher):
-    dp.register_message_handler(register_user_start, Text(equals='Регистрация'),
+    dp.register_message_handler(register_user_start, Text(equals='Регистрация'), # Регистрация это надпись или значение сравнения?
                                 state='*')
     dp.register_message_handler(register_user_gender,
                                 state=RegisterUser.waiting_gender)
