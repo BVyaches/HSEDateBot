@@ -12,7 +12,7 @@ async def start_keyboard():
 async def gender_keyboard():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=True)
-    buttons = ['Парень', 'Девушка']
+    buttons = ['Парень', '👩🏻‍🦱Девушка'] 
     keyboard.add(*buttons)
     return keyboard
 
