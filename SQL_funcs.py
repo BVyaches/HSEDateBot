@@ -51,17 +51,16 @@ async def get_next_person(user_id):
     cursor.execute('SELECT viewed_users FROM users WHERE user_id == (?)', (user_id,))
     result = cursor.fetchall()
     # If no one is viewed
-    if not result:
+    if result == [('',)]:
         next_id = list(all_users)[0]
         new_viewed_list = [next_id]
 
     else:
+
         viewed_set = str(result[0][0]).split(',')
         viewed_set = set(map(int, viewed_set))
 
         not_viewed_users = all_users.difference(viewed_set)
-        print(viewed_set)
-        print(not_viewed_users)
         # Get random user if everyone is viewed
         if len(not_viewed_users) == 0:
             next_id = list(all_users)[0]
@@ -75,14 +74,40 @@ async def get_next_person(user_id):
     database.commit()
 
     cursor.execute('SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)', (next_id,))
-    next_user = cursor.fetchall()
+    next_user = cursor.fetchone()
     return next_user
+
+
+async def get_user_data(user_id):
+    user_id = int(user_id)
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+
+    cursor.execute('SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)', (user_id,))
+    result = cursor.fetchone()
+    if not result:
+        return None
+    return result
+
+
+async def update_user_data(user_id, data):
+    name, gender, want_to_find, age, faculty, photo, about = data
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute(
+        'UPDATE users SET name = (?), gender=(?), want_to_find=(?), age= (?), faculty= (?), photo= (?), about= (?)'
+        ' WHERE user_id = (?)',
+        (name, gender, want_to_find, age, faculty, photo, about, user_id))
+    database.commit()
+
+
+async def update_user_about(user_id, about):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute('UPDATE users SET about= (?) WHERE user_id = (?)',
+                   (about, user_id))
+    database.commit()
 
 
 async def test(user_id):
     print(await get_next_person(user_id))
-
-
-# check
-
-asyncio.run(test(4444))

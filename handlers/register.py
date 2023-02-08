@@ -1,14 +1,11 @@
-import types
-
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
-from aiogram.dispatcher.filters.state import State, StatesGroup
-
 from SQL_funcs import *
-from initialization import bot
 from keyboards import *
 from verification import check_hse_mail, SendVerificationCode
+from handlers.States import VerUser, RegisterUser
+from formats import showing_user
 
 """
                 name TEXT,'
@@ -22,25 +19,8 @@ from verification import check_hse_mail, SendVerificationCode
 """
 
 
-class RegisterUser(StatesGroup):
-    waiting_name = State()
-    waiting_gender = State()
-    waiting_want_to_find = State()
-    waiting_age = State()
-    waiting_faculty = State()
-    waiting_photo = State()
-    waiting_about = State()
-    waiting_email = State()
-    waiting_code = State()
-
-
-class VerUser(StatesGroup):
-    is_verified = State()
-
-
 async def register_user_start(message: types.Message):
-    await message.answer('Как к вам обращаться?',
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer('Как к вам обращаться?', reply_markup=types.ReplyKeyboardRemove())
     await RegisterUser.waiting_name.set()
 
 
@@ -53,9 +33,8 @@ async def register_user_name(message: types.Message, state: FSMContext):
 async def register_user_gender(message: types.Message, state: FSMContext):
     gender = message.text
     if gender not in ['Парень', 'Девушка']:
-        await message.answer(
-            'Пожалуйста, выбери пол из предложенных на клавиатуре',
-            reply_markup=await gender_keyboard())
+        await message.answer('Пожалуйста, выбери пол из предложенных на клавиатуре',
+                             reply_markup=await gender_keyboard())
         return True
 
     if gender == 'Парень':
@@ -69,8 +48,7 @@ async def register_user_gender(message: types.Message, state: FSMContext):
     else:
         await state.update_data(waiting_want_to_find='f')
 
-    await message.answer('Сколько тебе лет?',
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer('Сколько тебе лет?', reply_markup=types.ReplyKeyboardRemove())
     await RegisterUser.waiting_age.set()
 
 
@@ -85,7 +63,6 @@ async def register_user_age(message: types.Message, state: FSMContext):
 
     await message.answer('Укажи ваш факультет')
 
-    await bot.send_message(message.from_user.id, await state.get_data())
     await RegisterUser.waiting_faculty.set()
 
 
@@ -97,27 +74,55 @@ async def register_user_faculty(message: types.Message, state: FSMContext):
 
 
 async def register_user_photo(message: types.Message, state: FSMContext):
-    photo = message.photo[0].file_id
-    await RegisterUser.waiting_about.set()
+    current_state = await state.get_state()
+    if current_state != 'VerUser:is_verified':
+        photo = message.photo[0].file_id
 
-    await state.update_data(waiting_photo=photo)
+        await state.update_data(waiting_photo=photo)
+
     await message.answer('Расскажи о себе')
+    await RegisterUser.waiting_about.set()
 
 
 async def register_user_about(message: types.Message, state: FSMContext):
     about = message.text
     await state.update_data(waiting_about=about)
-    await message.answer(
-        'Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент вышки')
-    await RegisterUser.waiting_email.set()
+
+    user_id = message.from_user.id
+    user_data = await get_user_data(user_id)
+
+    if user_data:
+        new_data = await state.get_data()
+        print(new_data.values())
+        if len(new_data) == 1:
+            new_about = new_data.get('waiting_about')
+            await update_user_about(user_id, new_about)
+        else:
+            new_data = list(new_data.values())
+
+            await update_user_data(user_id, new_data)
+        current_data = await get_user_data(user_id)
+        await message.answer('Анкета успешно обновлена:')
+        await message.answer_photo(photo=current_data[4], caption=await showing_user(current_data))
+
+        await VerUser.is_verified.set()
+        await message.answer('Чем займемся?', reply_markup=await main_menu_keyboard())
+    else:
+        await message.answer(
+            'Отправь свою @hse почту, чтобы мы могли подтвердить, что ты студент вышки')
+        await RegisterUser.waiting_email.set()
 
 
 async def register_user_email(message: types.Message, state: FSMContext):
+    await RegisterUser.waiting_email.set()
     email = message.text
+    print(email)
+    print(await check_hse_mail(email))
     if await check_hse_mail(email) is None:
         await message.answer(
             'Пожалуйста, введи твою личную почту с доменом @hse')
         return True
+    await state.update_data(waiting_email=email)
 
     code = await SendVerificationCode(email)
     await state.update_data(waiting_code=code)
@@ -135,14 +140,26 @@ async def register_user_code(message: types.Message, state: FSMContext):
         await message.answer(
             'Похоже, введен не тот код. Попробуй еще раз или введи другую почту')
         return True
-    await message.answer('Регистрация успешна!')
-    await add_user(*await state.get_data())
+
+    data = await state.get_data()
+    data = [message.from_user.id] + list(data.values())
+    await add_user(*data[:-1])
+    await message.answer('Регистрация успешна!', reply_markup=types.ReplyKeyboardRemove())
+    await message.answer('Чем займемся?', reply_markup=await main_menu_keyboard())
+    await state.finish()
     await VerUser.is_verified.set()
 
 
-def register_handler_find_pair(dp: Dispatcher):
+async def show_user_profile(message: types.Message, state: FSMContext):
+    await message.answer('Ваша анкета:')
+    user_data = await get_user_data(message.from_user.id)
+    profile_text = await showing_user(user_data)
+    await message.answer_photo(user_data[4], profile_text, reply_markup=await user_profile_view())
+
+
+def register_handler_register(dp: Dispatcher):
     dp.register_message_handler(register_user_start, Text(equals='Регистрация'),
-                                state='*')
+                                state=VerUser.not_verified)
     dp.register_message_handler(register_user_name,
                                 state=RegisterUser.waiting_name)
     dp.register_message_handler(register_user_gender,
@@ -163,3 +180,6 @@ def register_handler_find_pair(dp: Dispatcher):
                                 state=RegisterUser.waiting_code)
     dp.register_message_handler(register_user_code,
                                 state=RegisterUser.waiting_code)
+    dp.register_message_handler(show_user_profile, Text(equals='Моя анкета'), state=VerUser.is_verified)
+    dp.register_message_handler(register_user_start, Text(equals='Заполнить заново'), state=VerUser.is_verified)
+    dp.register_message_handler(register_user_photo, Text(equals='Поменять текст'), state=VerUser.is_verified)
