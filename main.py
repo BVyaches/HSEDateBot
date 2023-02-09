@@ -1,5 +1,5 @@
 import logging
-
+import asyncio
 
 from initialization import dp
 

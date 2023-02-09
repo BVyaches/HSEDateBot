@@ -4,7 +4,8 @@ from aiogram import types
 async def start_keyboard():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=True)
-    buttons = ['Давай попробуем😼'] # Здесь была 'Регистрация'. Заменил по требованию заказчика
+    buttons = [
+        'Давай попробуем😼']  # Здесь была 'Регистрация'. Заменил по требованию заказчика
     keyboard.add(*buttons)
     return keyboard
 
@@ -12,7 +13,8 @@ async def start_keyboard():
 async def gender_keyboard():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=True)
-    buttons = ['🧑🏻‍Парень', '👩🏻‍🦱Девушка'] # 🧑🏻‍Парень, 👩🏻‍🦱Девушка Добавил смайлики в кнопки. Надеюсь ничего не сломает (Виталий)
+    buttons = ['🧑🏻‍Парень',
+               '👩🏻‍🦱Девушка']  # 🧑🏻‍Парень, 👩🏻‍🦱Девушка Добавил смайлики в кнопки. Надеюсь ничего не сломает (Виталий)
     keyboard.add(*buttons)
     return keyboard
 
@@ -20,7 +22,7 @@ async def gender_keyboard():
 async def email_keyboard():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=True)
-    buttons = ['Ввести другой email'] # Здесь ничего не менял
+    buttons = ['Ввести другой email']  # Здесь ничего не менял
     keyboard.add(*buttons)
     return keyboard
 
@@ -58,9 +60,33 @@ async def is_responsed():
     return keyboard
 
 
-async def user_profile_view():
+async def user_profile_view_keyboard():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=True)
     buttons = ['Заполнить заново', 'Поменять текст', 'Выключить анкету', 'Меню']
+    keyboard.add(*buttons)
+    return keyboard
+
+
+async def complaint_to_admin_keyboard(user_id):
+    keyboard = types.InlineKeyboardMarkup()
+    buttons = [types.InlineKeyboardButton(text='Забанить',
+                                          callback_data=f'BAN {user_id}'),
+               types.InlineKeyboardButton(text='Помиловать',
+                                          callback_data='GOOD')]
+    keyboard.add(*buttons)
+    return keyboard
+
+async def complaint_response_done_keyboard():
+    keyboard = types.InlineKeyboardMarkup()
+    buttons = [types.InlineKeyboardButton(text='Сделано',
+                                          callback_data=f"SENDED"), ]
+    keyboard.add(*buttons)
+    return keyboard
+
+async def start_from_ban_keyboard():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
+                                         one_time_keyboard=True)
+    buttons = ['/start']
     keyboard.add(*buttons)
     return keyboard

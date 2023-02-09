@@ -26,3 +26,7 @@ class ProfileViewer(StatesGroup):
 class Complaint(StatesGroup):
     waiting_message = State()
     complaint_user = ''
+
+class BanUser(StatesGroup):
+    user_to_ban_id = 0
+    waiting_comment = State()

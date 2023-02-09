@@ -1,5 +1,4 @@
 import sqlite3
-import asyncio
 
 database = sqlite3.connect('server.db')
 cursor = database.cursor()
@@ -19,14 +18,17 @@ cursor.execute('CREATE TABLE IF NOT EXISTS users('
 database.commit()
 
 
-async def add_user(user_id, name, gender, want_to_find, age, faculty, photo, about, email):
+async def add_user(user_id, name, gender, want_to_find, age, faculty, photo,
+                   about, email):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
     cursor.execute(
         'INSERT INTO users (user_id, name, gender, want_to_find, age, '
         'faculty, photo, about, email, viewed_users, is_active) '
         'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "", 1)',
-        (user_id, name, gender, want_to_find, age, faculty, photo, about, email))
+        (
+            user_id, name, gender, want_to_find, age, faculty, photo, about,
+            email))
     database.commit()
 
 
@@ -35,12 +37,14 @@ async def get_next_person(user_id):
     cursor = database.cursor()
 
     # Get the gender user wants to find
-    cursor.execute('SELECT want_to_find FROM users WHERE user_id = (?)', (user_id,))
+    cursor.execute('SELECT want_to_find FROM users WHERE user_id = (?)',
+                   (user_id,))
     gender_user_wants = cursor.fetchone()[0]
 
     # Get every id of active users that satisfies preferences
-    cursor.execute('SELECT user_id FROM users WHERE is_active == 1 AND user_id != (?) AND gender = (?)',
-                   (user_id, gender_user_wants))
+    cursor.execute(
+        'SELECT user_id FROM users WHERE is_active == 1 AND user_id != (?) AND gender = (?)',
+        (user_id, gender_user_wants))
     all_users = set([x[0] for x in cursor.fetchall()])
 
     # Return False if no users are available
@@ -48,7 +52,8 @@ async def get_next_person(user_id):
         return False
 
     # Get viewed users
-    cursor.execute('SELECT viewed_users FROM users WHERE user_id == (?)', (user_id,))
+    cursor.execute('SELECT viewed_users FROM users WHERE user_id == (?)',
+                   (user_id,))
     result = cursor.fetchall()
     # If no one is viewed
     if result == [('',)]:
@@ -70,10 +75,13 @@ async def get_next_person(user_id):
             new_viewed_list = list(viewed_set) + [next_id]
 
     new_viewed = ','.join(list(map(str, new_viewed_list)))
-    cursor.execute('UPDATE users SET viewed_users = (?) WHERE user_id = (?)', (new_viewed, user_id))
+    cursor.execute('UPDATE users SET viewed_users = (?) WHERE user_id = (?)',
+                   (new_viewed, user_id))
     database.commit()
 
-    cursor.execute('SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)', (next_id,))
+    cursor.execute(
+        'SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)',
+        (next_id,))
     next_user = cursor.fetchone()
     return next_user
 
@@ -83,7 +91,32 @@ async def get_user_data(user_id):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
 
-    cursor.execute('SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)', (user_id,))
+    cursor.execute(
+        'SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)',
+        (user_id,))
+    result = cursor.fetchone()
+    if not result:
+        return None
+    return result
+
+
+async def get_active_status(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute('SELECT is_active FROM users WHERE users_id = (?)',
+                   (user_id,))
+    result = cursor.fetchone()
+    return result
+
+
+async def get_all_user_data(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+
+    cursor.execute(
+        'SELECT user_id, name, age, faculty, photo, about, email FROM users '
+        'WHERE user_id = (?)',
+        (user_id,))
     result = cursor.fetchone()
     if not result:
         return None
@@ -108,6 +141,26 @@ async def update_user_about(user_id, about):
                    (about, user_id))
     database.commit()
 
+
+async def ban_user(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    new_data = [
+        'Заблокированный пользователь', 0, '', '',
+        'Пользователь заблокирован за нарушение правил пользования']
+    cursor.execute(
+        'UPDATE users SET name = (?), age = (?), faculty = (?), '
+        'photo = (?), about = (?), is_active = 0 WHERE user_id = (?)',
+        (*new_data, user_id))
+    database.commit()
+
+
+async def delete_user(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+
+    cursor.execute('DELETE FROM users WHERE user_id = (?)', (user_id,))
+    database.commit()
 
 async def test(user_id):
     print(await get_next_person(user_id))
