@@ -162,5 +162,24 @@ async def delete_user(user_id):
     cursor.execute('DELETE FROM users WHERE user_id = (?)', (user_id,))
     database.commit()
 
+async def deactivate_profile(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute('UPDATE users SET is_active= 0 WHERE user_id = (?)',
+                   (user_id, ))
+    database.commit()
+
+
+async def activate_profile(user_id):
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute('SELECT is_active FROM users WHERE user_id = (?)', (user_id, ))
+    is_active = cursor.fetchone()
+    print(is_active)
+    if is_active[0] == 0:
+        cursor.execute('UPDATE users SET is_active= 1 WHERE user_id = (?)',
+                       (user_id,))
+        database.commit()
+
 async def test(user_id):
     print(await get_next_person(user_id))

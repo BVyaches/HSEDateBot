@@ -27,6 +27,19 @@ class Complaint(StatesGroup):
     waiting_message = State()
     complaint_user = ''
 
+
 class BanUser(StatesGroup):
     user_to_ban_id = 0
     waiting_comment = State()
+
+
+class LoveLetter(StatesGroup):
+    letter_photo = ''
+    waiting_for_decision = State()
+    waiting_for_letter = State()
+    waiting_for_category = State()
+    waiting_for_approvement = State()
+
+
+class DeactivateProfile(StatesGroup):
+    waiting_for_approvement = State()
