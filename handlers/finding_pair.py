@@ -1,5 +1,5 @@
 import configparser
-
+import aiogram.utils.markdown as fmt
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -23,9 +23,9 @@ async def show_next_profile(message: types.Message, state: FSMContext):
     next_data = await get_next_person(message.from_user.id)
     if not next_data:
         await VerUser.is_verified.set()
-        await message.answer(
-            'Похоже, пока что нет подходящих пользователей. Уверены, они скоро появятся, а пока чем займемся?',
-            reply_markup=await main_menu_keyboard())
+        await message.answer(fmt.bold(
+            'Похоже, пока что нет подходящих пользователей. Уверены, они скоро появятся, а пока чем займемся?'),
+                             reply_markup=await main_menu_keyboard())
     else:
         await state.update_data(waiting_profile=next_data[0])
         profile_text = await showing_user(next_data)
@@ -37,7 +37,7 @@ async def show_next_profile(message: types.Message, state: FSMContext):
 async def profile_repsonse(message: types.Message, state: FSMContext):
     response = message.text
     if response not in ['❤', '👎🏻', 'Жалоба', 'Меню📌']:
-        await message.answer('Пожалуйста, выбери пункт из меню')
+        await message.answer(fmt.bold('Пожалуйста, выбери пункт из меню'))
         return True
 
     data = await get_user_data(message.from_user.id)
@@ -47,14 +47,14 @@ async def profile_repsonse(message: types.Message, state: FSMContext):
     send_to_user = send_to_user.get('waiting_profile')
     if response == '❤':
         try:
-            await bot.send_message(chat_id=send_to_user, text='Кто-то тебя оценил:')
+            await bot.send_message(chat_id=send_to_user, text=fmt.bold('Кто-то тебя оценил:'))
             await bot.send_photo(chat_id=send_to_user, photo=data[4],
                                  caption=profile_text,
                                  reply_markup=await response_keyboard(
                                      message.from_user.id))
-            await message.answer('Твой лайк отправлен!')
+            await message.answer(fmt.bold('Твой лайк отправлен!'))
         except BotBlocked:
-            await message.answer('Похоже, данный пользователь перестал пользоваться ботом')
+            await message.answer(fmt.bold('Похоже, данный пользователь перестал пользоваться ботом'))
             await delete_user(send_to_user)
 
         await ProfileViewer.waiting_profile.set()
@@ -65,14 +65,14 @@ async def profile_repsonse(message: types.Message, state: FSMContext):
         await show_next_profile(message, state)
 
     elif response == 'Жалоба':
-        await message.answer('Опиши причину жалобы',
+        await message.answer(fmt.bold('Опиши причину жалобы'),
                              reply_markup=types.ReplyKeyboardRemove())
         await Complaint.waiting_message.set()
         await state.update_data(complaint_user=send_to_user)
 
     elif response == 'Меню📌':
         await VerUser.is_verified.set()
-        await message.answer('Что делаем?😎',
+        await message.answer(fmt.bold('Что делаем?😎'),
                              reply_markup=await main_menu_keyboard())
 
 
@@ -97,7 +97,7 @@ async def user_was_liked(call: types.CallbackQuery, state: FSMContext):
         await bot.send_photo(user_second, photo=user_first_data[4],
                              caption=await showing_user(user_first_data))
     else:
-        await call.message.answer('Пожалуйста, пройдите регистрацию для ответа')
+        await call.message.answer(fmt.bold('Пожалуйста, пройди регистрацию для ответа'))
 
 
 async def user_no_love(call: types.CallbackQuery):
@@ -120,7 +120,7 @@ async def wait_for_complaint(message: types.Message, state: FSMContext):
                              reply_markup=await complaint_to_admin_keyboard(
                                  complaint_id))
     await state.finish()
-    await message.answer('Ваша жалоба отправлена')
+    await message.answer(fmt.bold('Ваша жалоба отправлена'))
     await show_next_profile(message, state)
 
 
@@ -140,12 +140,12 @@ async def ban_user_finish(message: types.Message, state: FSMContext):
     user_to_ban_id = state_data.get('user_to_ban_id')
     user_state = dp.current_state(user=user_to_ban_id)
     try:
-        await bot.send_message(user_to_ban_id,
-                               f'Вы были заблокированы по следующей причине:\n'
-                               f'{ban_comment}\n'
-                               f'Ваша анкета была удалена. Для продолжения '
-                               f'пользования ботом введите команду /start и '
-                               f'пройдите регистрацию заново',
+        await bot.send_message(user_to_ban_id, fmt.bold(
+            f'Вы были заблокированы по следующей причине:\n'
+            f'{ban_comment}\n'
+            f'Ваша анкета была удалена. Для продолжения '
+            f'пользования ботом введите команду /start и '
+            f'пройдите регистрацию заново'),
                                reply_markup=await start_from_ban_keyboard())
         await user_state.set_state(VerUser.not_verified)
         await delete_user(user_to_ban_id)
@@ -157,6 +157,8 @@ async def ban_user_finish(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+async def show_pass_keyboard(call: types.CallbackQuery):
+    await call.message.edit_reply_markup(reply_markup=await pass_keyboard())
 
 
 def register_handler_finding_pair(dp: Dispatcher):
@@ -173,3 +175,4 @@ def register_handler_finding_pair(dp: Dispatcher):
     dp.register_callback_query_handler(user_no_love, Text(equals='No'), state='*')
     dp.register_callback_query_handler(ban_user_start, Text(startswith='BAN'), state='*')
     dp.register_message_handler(ban_user_finish, state=BanUser.waiting_comment)
+    dp.register_callback_query_handler(show_pass_keyboard, Text(equals='PASS'), state='*')

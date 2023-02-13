@@ -43,3 +43,9 @@ class LoveLetter(StatesGroup):
 
 class DeactivateProfile(StatesGroup):
     waiting_for_approvement = State()
+
+
+class AdminMassPost(StatesGroup):
+    post_photo = ''
+    waiting_for_post = State()
+    waiting_for_approvement = State()

@@ -73,7 +73,7 @@ async def complaint_to_admin_keyboard(user_id):
     buttons = [types.InlineKeyboardButton(text='Забанить',
                                           callback_data=f'BAN {user_id}'),
                types.InlineKeyboardButton(text='Помиловать',
-                                          callback_data='GOOD')]
+                                          callback_data='PASS')]
     keyboard.add(*buttons)
     return keyboard
 
@@ -109,9 +109,35 @@ async def post_category_keyboard():
     keyboard.add(*buttons)
     return keyboard
 
+
 async def back_to_menu():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                          one_time_keyboard=False)
     buttons = ['Да!', 'Назад в меню📌']
+    keyboard.add(*buttons)
+    return keyboard
+
+
+async def post_letter_keyboard():
+    keyboard = types.InlineKeyboardMarkup()
+    buttons = [types.InlineKeyboardButton(text='Опубликовать',
+                                          callback_data=f'POST'),
+               types.InlineKeyboardButton(text='Не публиковать',
+                                          callback_data='PASS')]
+    keyboard.add(*buttons)
+    return keyboard
+
+
+async def pass_keyboard():
+    keyboard = types.InlineKeyboardMarkup()
+    buttons = [types.InlineKeyboardButton(text='Готово',
+                                          callback_data=f"SENDED"), ]
+    keyboard.add(*buttons)
+    return keyboard
+
+async def admin_keyboard():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
+                                         one_time_keyboard=False)
+    buttons = ['Массовая рассылка', 'Статистика', 'Меню📌']
     keyboard.add(*buttons)
     return keyboard

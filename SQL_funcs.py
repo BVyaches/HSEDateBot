@@ -18,6 +18,14 @@ cursor.execute('CREATE TABLE IF NOT EXISTS users('
 database.commit()
 
 
+def make_parsable(text: str):
+    gaps = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    for gap in gaps:
+        text = text.replace(gap, f'\{gap}')
+    print(text)
+    return text
+
+
 async def add_user(user_id, name, gender, want_to_find, age, faculty, photo,
                    about, email):
     database = sqlite3.connect('server.db')
@@ -27,8 +35,9 @@ async def add_user(user_id, name, gender, want_to_find, age, faculty, photo,
         'faculty, photo, about, email, viewed_users, is_active) '
         'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "", 1)',
         (
-            user_id, name, gender, want_to_find, age, faculty, photo, about,
-            email))
+            user_id, make_parsable(name), gender, want_to_find, age, make_parsable(faculty), photo,
+            make_parsable(about),
+            make_parsable(email)))
     database.commit()
 
 
@@ -130,7 +139,7 @@ async def update_user_data(user_id, data):
     cursor.execute(
         'UPDATE users SET name = (?), gender=(?), want_to_find=(?), age= (?), faculty= (?), photo= (?), about= (?)'
         ' WHERE user_id = (?)',
-        (name, gender, want_to_find, age, faculty, photo, about, user_id))
+        (make_parsable(name), gender, want_to_find, age, make_parsable(faculty), photo, make_parsable(about), user_id))
     database.commit()
 
 
@@ -138,7 +147,7 @@ async def update_user_about(user_id, about):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
     cursor.execute('UPDATE users SET about= (?) WHERE user_id = (?)',
-                   (about, user_id))
+                   (make_parsable(about), user_id))
     database.commit()
 
 
@@ -162,24 +171,34 @@ async def delete_user(user_id):
     cursor.execute('DELETE FROM users WHERE user_id = (?)', (user_id,))
     database.commit()
 
+
 async def deactivate_profile(user_id):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
     cursor.execute('UPDATE users SET is_active= 0 WHERE user_id = (?)',
-                   (user_id, ))
+                   (user_id,))
     database.commit()
 
 
 async def activate_profile(user_id):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
-    cursor.execute('SELECT is_active FROM users WHERE user_id = (?)', (user_id, ))
+    cursor.execute('SELECT is_active FROM users WHERE user_id = (?)', (user_id,))
     is_active = cursor.fetchone()
     print(is_active)
     if is_active[0] == 0:
         cursor.execute('UPDATE users SET is_active= 1 WHERE user_id = (?)',
                        (user_id,))
         database.commit()
+
+
+async def get_all_users():
+    database = sqlite3.connect('server.db')
+    cursor = database.cursor()
+    cursor.execute('SELECT user_id FROM users')
+    user_list = list(map(lambda x: x[0], cursor.fetchall()))
+    return user_list
+
 
 async def test(user_id):
     print(await get_next_person(user_id))

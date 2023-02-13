@@ -7,7 +7,7 @@ async def showing_user(data: list):
     user_id, name, age, faculty, photo, about = data
     first_field = name + ', ' + str(age) + ', ' + faculty
     second_field = about
-    result = fmt.text(first_field, second_field, sep='\n')
+    result = first_field + '\n' + second_field
     return result
 
 
@@ -15,3 +15,7 @@ async def show_love_user(user_id):
     user_id = int(user_id)
     result = fmt.text(f'<a href="tg://user?id={user_id}">Перейти к диалогу</a>')
     return result
+
+
+async def bold(text):
+    result = fmt.bold(text)

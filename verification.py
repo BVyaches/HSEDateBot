@@ -1,26 +1,21 @@
 import random
 import smtplib
 import re
+import aiosmtplib
+from email.message import EmailMessage
 import asyncio
 
-async def SendVerificationCode(toAddrs):
-    email = 'hseloveperm.bot@yandex.ru'
+async def SendVerificationCode(email_to_send):
+    message = EmailMessage()
     verCode = str(random.randint(0, 9)) + str(random.randint(0, 9)) + str(random.randint(0, 9)) + str(
         random.randint(0, 9))
+    message["From"] = "hseloveperm.bot@yandex.ru"
+    message["To"] = email_to_send
+    message["Subject"] = "❕Ваш код для входа и создания анкеты❕"
+    message.set_content('Ваш код для входа и регистрации: ' + verCode)
 
-    subject = '❕Ваш код для входа и создания анкеты❕'
-    message = 'Ваш код для входа и регистрации: ' + verCode
-
-    msg = 'From: {}\r\nTo: {}\r\nSubject: {}\n\n{}'.format(
-        email, toAddrs, subject, message
-    )
-
-    server = smtplib.SMTP('smtp.yandex.ru')
-    server.starttls()
-    server.login(email, 'phoenix14bot')
-    server.sendmail(email, toAddrs, msg.encode('utf8'))
-    server.quit()
-
+    await aiosmtplib.send(message, hostname="smtp.yandex.ru", port=25, password='phoenix14bot',
+                          username="hseloveperm.bot@yandex.ru")
     return verCode
 
 
