@@ -1,4 +1,5 @@
 import sqlite3
+import random
 
 database = sqlite3.connect('server.db')
 cursor = database.cursor()
@@ -21,7 +22,7 @@ database.commit()
 def make_parsable(text: str):
     gaps = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for gap in gaps:
-        text = text.replace(gap, f'\{gap}')
+        text = text.replace(gap, f"\{gap}")
     print(text)
     return text
 
@@ -55,7 +56,6 @@ async def get_next_person(user_id):
         'SELECT user_id FROM users WHERE is_active == 1 AND user_id != (?) AND gender = (?)',
         (user_id, gender_user_wants))
     all_users = set([x[0] for x in cursor.fetchall()])
-
     # Return False if no users are available
     if not all_users:
         return False
@@ -77,10 +77,10 @@ async def get_next_person(user_id):
         not_viewed_users = all_users.difference(viewed_set)
         # Get random user if everyone is viewed
         if len(not_viewed_users) == 0:
-            next_id = list(all_users)[0]
+            next_id = list(all_users)[random.randint(0, len(all_users)-1)]
             new_viewed_list = [next_id]
         else:
-            next_id = list(not_viewed_users)[0]
+            next_id = list(not_viewed_users)[random.randint(0, len(not_viewed_users)-1)]
             new_viewed_list = list(viewed_set) + [next_id]
 
     new_viewed = ','.join(list(map(str, new_viewed_list)))

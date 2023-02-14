@@ -46,7 +46,7 @@ async def get_post_info(message: types.Message, state: FSMContext):
         if message.caption is None:
             post_text = ''
         post_photo = message.photo[0]
-    post_text = fmt.bold(make_parsable(post_text))
+    post_text = make_parsable(post_text)
 
     await AdminMassPost.waiting_for_approvement.set()
     print(message)
@@ -69,6 +69,8 @@ async def mass_post(message: types.Message, state: FSMContext):
     post_photo = post_data.get('post_photo')
     tasks = []
     all_users = await get_all_users()
+    await state.finish()
+    await message.answer(fmt.bold('Рассылка началась'))
     for user in all_users:
         if user:
             try:
@@ -81,7 +83,7 @@ async def mass_post(message: types.Message, state: FSMContext):
                 await delete_user(user)
     await asyncio.gather(*tasks)
     await message.answer(fmt.bold('Рассылка прошла успешно'))
-    await state.finish()
+
     await message.answer(fmt.bold('Что требуется?'), reply_markup=await admin_keyboard())
     await VerUser.is_verified.set()
 

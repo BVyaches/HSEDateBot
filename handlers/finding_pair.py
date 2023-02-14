@@ -25,7 +25,7 @@ async def show_next_profile(message: types.Message, state: FSMContext):
         await VerUser.is_verified.set()
         await message.answer(fmt.bold(
             'Похоже, пока что нет подходящих пользователей. Уверены, они скоро появятся, а пока чем займемся?'),
-                             reply_markup=await main_menu_keyboard())
+            reply_markup=await main_menu_keyboard())
     else:
         await state.update_data(waiting_profile=next_data[0])
         profile_text = await showing_user(next_data)
@@ -87,13 +87,11 @@ async def user_was_liked(call: types.CallbackQuery, state: FSMContext):
         print(user_first, user_second)
 
         await bot.send_message(user_first,
-                               'У вас взаимная симпатия! ' + await show_love_user(
-                                   user_second),
-                               parse_mode='html')
+                               'У вас взаимная симпатия\! ' + await show_love_user(
+                                   user_second))
         await bot.send_message(user_second,
-                               'У вас взаимная симпатия! ' + await show_love_user(
-                                   user_first),
-                               parse_mode='html')
+                               'У вас взаимная симпатия\! ' + await show_love_user(
+                                   user_first))
         await bot.send_photo(user_second, photo=user_first_data[4],
                              caption=await showing_user(user_first_data))
     else:
@@ -109,12 +107,12 @@ async def wait_for_complaint(message: types.Message, state: FSMContext):
     complaint_id = complaint_id.get('complaint_user')
     user_data = await get_all_user_data(complaint_id)
     user_email = user_data[-1]
-    text = f'Жалоба на пользователя с почтой {user_email} и с ' \
-           f'id <a href="tg://user?id={complaint_id}">{complaint_id}</a> \n' \
-           f'{message.text}'
-
+    text_to_parsable = make_parsable(f'\n{message.text}')
+    text = f'Жалоба на пользователя с почтой {user_email} и с id ' + \
+           f'[{complaint_id}](tg://user?id={complaint_id}) ' + text_to_parsable
+    print(text)
     for admin_id in admin_ids:
-        await bot.send_message(admin_id, text, parse_mode='html')
+        await bot.send_message(admin_id, text)
         await bot.send_photo(admin_id, photo=user_data[4],
                              caption=await showing_user(user_data[:-1]),
                              reply_markup=await complaint_to_admin_keyboard(

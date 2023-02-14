@@ -13,7 +13,7 @@ async def showing_user(data: list):
 
 async def show_love_user(user_id):
     user_id = int(user_id)
-    result = fmt.text(f'<a href="tg://user?id={user_id}">Перейти к диалогу</a>')
+    result = fmt.text(f'[Перейти к диалогу](tg://user?id={user_id})')
     return result
 
 
