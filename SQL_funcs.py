@@ -9,10 +9,10 @@ cursor.execute('CREATE TABLE IF NOT EXISTS users('
                'gender TEXT,'
                'want_to_find TEXT,'
                'age INTEGER,'
+               'university TEXT,'
                'faculty TEXT,'
                'photo TEXT,'
                'about TEXT,'
-               'email TEXT,'
                'viewed_users TEXT,'
                'is_active INT'
                ')')
@@ -27,18 +27,18 @@ def make_parsable(text: str):
     return text
 
 
-async def add_user(user_id, name, gender, want_to_find, age, faculty, photo,
-                   about, email):
+async def add_user(user_id, name, gender, want_to_find, age, faculty, university, photo,
+                   about):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
     cursor.execute(
         'INSERT INTO users (user_id, name, gender, want_to_find, age, '
-        'faculty, photo, about, email, viewed_users, is_active) '
+        'faculty, university, photo, about, viewed_users, is_active) '
         'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "", 1)',
         (
-            user_id, make_parsable(name), gender, want_to_find, age, make_parsable(faculty), photo,
-            make_parsable(about),
-            make_parsable(email)))
+            user_id, make_parsable(name), gender, want_to_find, age, make_parsable(faculty), make_parsable(university),
+            photo, make_parsable(about),
+        ))
     database.commit()
 
 
@@ -89,7 +89,7 @@ async def get_next_person(user_id):
     database.commit()
 
     cursor.execute(
-        'SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)',
+        'SELECT user_id, name, age, faculty, university, photo, about FROM users WHERE user_id = (?)',
         (next_id,))
     next_user = cursor.fetchone()
     return next_user
@@ -101,7 +101,7 @@ async def get_user_data(user_id):
     cursor = database.cursor()
 
     cursor.execute(
-        'SELECT user_id, name, age, faculty, photo, about FROM users WHERE user_id = (?)',
+        'SELECT user_id, name, age, faculty, university, photo, about FROM users WHERE user_id = (?)',
         (user_id,))
     result = cursor.fetchone()
     if not result:
@@ -112,7 +112,7 @@ async def get_user_data(user_id):
 async def get_active_status(user_id):
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
-    cursor.execute('SELECT is_active FROM users WHERE users_id = (?)',
+    cursor.execute('SELECT is_active FROM users WHERE user_id = (?)',
                    (user_id,))
     result = cursor.fetchone()
     return result
@@ -123,7 +123,7 @@ async def get_all_user_data(user_id):
     cursor = database.cursor()
 
     cursor.execute(
-        'SELECT user_id, name, age, faculty, photo, about, email FROM users '
+        'SELECT user_id, name, age, faculty, university, photo, about FROM users '
         'WHERE user_id = (?)',
         (user_id,))
     result = cursor.fetchone()
@@ -133,13 +133,15 @@ async def get_all_user_data(user_id):
 
 
 async def update_user_data(user_id, data):
-    name, gender, want_to_find, age, faculty, photo, about = data
+    name, gender, want_to_find, age, faculty, university, photo, about = data
     database = sqlite3.connect('server.db')
     cursor = database.cursor()
     cursor.execute(
-        'UPDATE users SET name = (?), gender=(?), want_to_find=(?), age= (?), faculty= (?), photo= (?), about= (?)'
+        'UPDATE users SET name = (?), gender=(?), want_to_find=(?), age= (?), faculty= (?), university = (?), '
+        'photo= (?), about= (?)'
         ' WHERE user_id = (?)',
-        (make_parsable(name), gender, want_to_find, age, make_parsable(faculty), photo, make_parsable(about), user_id))
+        (make_parsable(name), gender, want_to_find, age, make_parsable(faculty), make_parsable(university), photo,
+         make_parsable(about), user_id))
     database.commit()
 
 
@@ -148,19 +150,6 @@ async def update_user_about(user_id, about):
     cursor = database.cursor()
     cursor.execute('UPDATE users SET about= (?) WHERE user_id = (?)',
                    (make_parsable(about), user_id))
-    database.commit()
-
-
-async def ban_user(user_id):
-    database = sqlite3.connect('server.db')
-    cursor = database.cursor()
-    new_data = [
-        'Заблокированный пользователь', 0, '', '',
-        'Пользователь заблокирован за нарушение правил пользования']
-    cursor.execute(
-        'UPDATE users SET name = (?), age = (?), faculty = (?), '
-        'photo = (?), about = (?), is_active = 0 WHERE user_id = (?)',
-        (*new_data, user_id))
     database.commit()
 
 

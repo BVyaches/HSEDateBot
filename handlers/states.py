@@ -6,11 +6,10 @@ class RegisterUser(StatesGroup):
     waiting_gender = State()
     waiting_want_to_find = State()
     waiting_age = State()
+    waiting_university = State()
     waiting_faculty = State()
     waiting_photo = State()
     waiting_about = State()
-    waiting_email = State()
-    waiting_code = State()
 
 
 class VerUser(StatesGroup):

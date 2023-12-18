@@ -29,7 +29,7 @@ async def show_next_profile(message: types.Message, state: FSMContext):
     else:
         await state.update_data(waiting_profile=next_data[0])
         profile_text = await showing_user(next_data)
-        await message.answer_photo(photo=next_data[4], caption=profile_text,
+        await message.answer_photo(photo=next_data[5], caption=profile_text,
                                    reply_markup=await profile_view_keyboard())
         await ProfileViewer.waiting_response.set()
 
@@ -48,7 +48,7 @@ async def profile_repsonse(message: types.Message, state: FSMContext):
     if response == '❤':
         try:
             await bot.send_message(chat_id=send_to_user, text=fmt.bold('Кто-то тебя оценил:'))
-            await bot.send_photo(chat_id=send_to_user, photo=data[4],
+            await bot.send_photo(chat_id=send_to_user, photo=data[5],
                                  caption=profile_text,
                                  reply_markup=await response_keyboard(
                                      message.from_user.id))
@@ -85,15 +85,18 @@ async def user_was_liked(call: types.CallbackQuery, state: FSMContext):
         user_second = int(call.data.replace('Love', ''))
         await call.message.edit_reply_markup(reply_markup=await is_responsed())
         print(user_first, user_second)
-
-        await bot.send_message(user_first,
-                               'У вас взаимная симпатия\! ' + await show_love_user(
-                                   user_second))
-        await bot.send_message(user_second,
-                               'У вас взаимная симпатия\! ' + await show_love_user(
-                                   user_first))
-        await bot.send_photo(user_second, photo=user_first_data[4],
-                             caption=await showing_user(user_first_data))
+        try:
+            await bot.send_message(user_first,
+                                   'У вас взаимная симпатия\! ' + await show_love_user(
+                                       user_second))
+            await bot.send_message(user_second,
+                                   'У вас взаимная симпатия\! ' + await show_love_user(
+                                       user_first))
+            await bot.send_photo(user_second, photo=user_first_data[5],
+                                 caption=await showing_user(user_first_data))
+        except BotBlocked:
+            await call.message.answer(fmt.bold('Похоже, данный пользователь перестал пользоваться ботом'))
+            await delete_user(user_second)
     else:
         await call.message.answer(fmt.bold('Пожалуйста, пройди регистрацию для ответа'))
 
@@ -106,15 +109,14 @@ async def wait_for_complaint(message: types.Message, state: FSMContext):
     complaint_id = await state.get_data()
     complaint_id = complaint_id.get('complaint_user')
     user_data = await get_all_user_data(complaint_id)
-    user_email = user_data[-1]
     text_to_parsable = make_parsable(f'\n{message.text}')
-    text = f'Жалоба на пользователя с почтой {user_email} и с id ' + \
+    text = f'Жалоба на пользователя с id ' + \
            f'[{complaint_id}](tg://user?id={complaint_id}) ' + text_to_parsable
     print(text)
     for admin_id in admin_ids:
         await bot.send_message(admin_id, text)
-        await bot.send_photo(admin_id, photo=user_data[4],
-                             caption=await showing_user(user_data[:-1]),
+        await bot.send_photo(admin_id, photo=user_data[5],
+                             caption=await showing_user(user_data),
                              reply_markup=await complaint_to_admin_keyboard(
                                  complaint_id))
     await state.finish()

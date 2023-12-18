@@ -6,8 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
 from SQL_funcs import *
-from formats import showing_user, show_love_user
-from handlers.states import VerUser, ProfileViewer, Complaint, BanUser, LoveLetter
+from handlers.states import VerUser, LoveLetter
 from initialization import bot, dp
 from keyboards import *
 
@@ -17,13 +16,16 @@ group_id = int(config.get('CHAT_IDs', 'group_id'))
 admin_ids = list(map(int, config.get('CHAT_IDs', 'admin_ids').split(',')))
 
 
+@dp.message_handler(Text(equals='Письмо любви'), state=VerUser.is_verified)
 async def start_love_letter(message: types.Message, state: FSMContext):
-    await message.answer(fmt.bold('Данная функция позволяет отправить письмо любви в группу https://t.me/HSELoveGroup\n'
-                                  'Продолжим?'),
-                         reply_markup=await back_to_menu())
+    await message.answer(
+        fmt.bold('Данная функция позволяет отправить письмо любви в группу https://t.me/LovePermGroup\n'
+                 'Продолжим?'),
+        reply_markup=await back_to_menu())
     await LoveLetter.waiting_for_decision.set()
 
 
+@dp.message_handler(Text(equals='Да!'), state=LoveLetter.waiting_for_decision)
 async def ask_for_letter(message: types.Message):
     await message.answer(
         fmt.bold('Сейчас отправь сообщение, которое хочешь опубликовать в группе. '
@@ -32,6 +34,7 @@ async def ask_for_letter(message: types.Message):
     await LoveLetter.waiting_for_letter.set()
 
 
+@dp.message_handler(state=LoveLetter.waiting_for_letter, content_types=['photo', 'text'])
 async def create_love_letter(message: types.Message, state: FSMContext):
     letter_text = message.text
     letter_photo = ''
@@ -47,6 +50,7 @@ async def create_love_letter(message: types.Message, state: FSMContext):
                          reply_markup=await post_category_keyboard())
 
 
+@dp.message_handler(state=LoveLetter.waiting_for_category)
 async def set_category(message: types.Message, state: FSMContext):
     category = message.text
     if category not in ['Анонимно', 'С ником']:
@@ -69,6 +73,7 @@ async def set_category(message: types.Message, state: FSMContext):
     await LoveLetter.waiting_for_approvement.set()
 
 
+@dp.message_handler(state=LoveLetter.waiting_for_approvement)
 async def send_letter(message: types.Message, state: FSMContext):
     approvement = message.text
     if approvement not in ['Да', 'Нет']:
@@ -96,6 +101,7 @@ async def send_letter(message: types.Message, state: FSMContext):
         await start_love_letter(message, state)
 
 
+@dp.callback_query_handler(Text(startswith='POST'), state='*')
 async def post_letter(call: types.CallbackQuery):
     print(call)
     letter_photo = ''
@@ -103,9 +109,10 @@ async def post_letter(call: types.CallbackQuery):
     if letter_text is None:
         letter_text = call.message.caption
         letter_photo = call.message.photo[0]
-    letter_text = make_parsable(letter_text)
+    if letter_text is not None:
+        letter_text = make_parsable(letter_text)
     data = {}
-    if 'Написать автору' in letter_text:
+    if letter_text is not None and 'Написать автору' in letter_text:
         try:
             data = eval(str(call.message.entities[0]).replace('false', 'False'))
         except IndexError:
@@ -118,21 +125,10 @@ async def post_letter(call: types.CallbackQuery):
         user_id = data.get('user').get('id')
 
         letter_text = letter_text.replace('Написать автору',
-                                              f'[Написать автору](tg://user?id={user_id})')
+                                          f'[Написать автору](tg://user?id={user_id})')
     if letter_photo:
         await bot.send_photo(chat_id=group_id, photo=letter_photo.file_id, caption=letter_text)
     else:
         await bot.send_message(chat_id=group_id, text=letter_text)
     await call.message.edit_reply_markup(reply_markup=await pass_keyboard())
     await call.message.answer(fmt.bold('Письмо успешно опубликовано'))
-
-
-def register_handler_anon_post(dp: Dispatcher):
-    dp.register_message_handler(start_love_letter, Text(equals='Письмо любви'),
-                                state=VerUser.is_verified)
-    dp.register_message_handler(ask_for_letter, Text(equals='Да!'), state=LoveLetter.waiting_for_decision)
-    dp.register_message_handler(create_love_letter, state=LoveLetter.waiting_for_letter,
-                                content_types=['photo', 'text'])
-    dp.register_message_handler(set_category, state=LoveLetter.waiting_for_category)
-    dp.register_message_handler(send_letter, state=LoveLetter.waiting_for_approvement)
-    dp.register_callback_query_handler(post_letter, Text(startswith='POST'), state='*')
